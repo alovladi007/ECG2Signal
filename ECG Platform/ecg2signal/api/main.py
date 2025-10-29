@@ -1,7 +1,8 @@
 
 """FastAPI application for ECG2Signal."""
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 from pathlib import Path
@@ -19,10 +20,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files
+static_dir = Path(__file__).parent.parent.parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 converter = ECGConverter(settings)
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
+    """Serve the landing page."""
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return {"message": "ECG2Signal API", "version": "0.1.0"}
 
 @app.get("/health")
